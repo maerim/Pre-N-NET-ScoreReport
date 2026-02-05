@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Multi-Subject Exam Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
+        .stat-card { @apply bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md; }
+        .table-container { @apply bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden; }
+        .sticky-header th { position: sticky; top: 0; background: #f8fafc; z-index: 10; }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Loading State -->
+    <div id="loading" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center hidden">
+        <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p id="loading-text" class="mt-4 text-slate-600 font-medium">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        <!-- Header & Subject Selector -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <div>
+                <h1 id="main-title" class="text-3xl font-bold text-slate-900">ระบบวิเคราะห์ผลการสอบภาพรวม</h1>
+                <p class="text-slate-500 mt-1">คะแนนเต็ม 40 (ผ่านที่ 20) | ระบบรวมข้อมูลอัตโนมัติ</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative min-w-[250px]">
+                    <select id="subject-selector" onchange="changeSubject(this.value)" class="w-full pl-4 pr-10 py-3 bg-indigo-50 border border-indigo-100 rounded-xl font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
+                        <option value="ALL">🌟 แสดงรวมทุกรายวิชา</option>
+                        <optgroup label="รายวิชาทั้งหมด">
+                            <option value="ทร11001">ทร11001 ทักษะการเรียนรู้</option>
+                            <option value="อข11001">อข11001 ภาษาไทย</option>
+                            <option value="อช11001">อช11001 ช่องทางการเข้าสู่อาชีพ</option>
+                            <option value="อช11002">อช11002 ทักษะการประกอบอาชีพ</option>
+                            <option value="อช11003">อช11003 พัฒนาอาชีพให้มีอยู่มีกิน</option>
+                            <option value="ทช11001">ทช11001 สุขศึกษา พลศึกษา</option>
+                            <option value="ทช11003">ทช11003 ศิลปศึกษา</option>
+                            <option value="พท11001">พท11001 ภาษาอังกฤษพื้นฐาน</option>
+                            <option value="พต11001">พต11001 ภาษาอังกฤษในชีวิตประจำวัน</option>
+                            <option value="พว11001">พว11001 วิทยาศาสตร์</option>
+                            <option value="สค11001">สค11001 สังคมศึกษา</option>
+                            <option value="สค11002">สค11002 ศาสนาและหน้าที่พลเมือง</option>
+                            <option value="สค11003">สค11003 การพัฒนาตนเอง ครอบครัว ชุมชน</option>
+                            <option value="พว11002">พว11002 คณิตศาสตร์</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <button onclick="fetchData()" class="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    รีเฟรชข้อมูล
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="stat-card">
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">จำนวนรายการสอบ</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <span id="kpi-total" class="text-4xl font-bold text-slate-800">0</span>
+                    <span class="text-slate-400">ครั้ง</span>
+                </div>
+            </div>
+            <div class="stat-card border-b-4 border-b-green-500">
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">ภาพรวมการสอบผ่าน</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <span id="kpi-pass-rate" class="text-4xl font-bold text-green-600">0%</span>
+                    <span id="kpi-pass-count" class="text-slate-400 text-sm">0 คน</span>
+                </div>
+            </div>
+            <div class="stat-card border-b-4 border-b-orange-500">
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">คนทำซ้ำ/ลงหลายวิชา</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <span id="kpi-dup-users" class="text-4xl font-bold text-orange-600">0</span>
+                    <span class="text-slate-400">คน</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">คะแนนเฉลี่ยรวม</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <span id="kpi-avg" class="text-4xl font-bold text-indigo-600">0.0</span>
+                    <span class="text-slate-400">/ 40</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- District Insights -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 flex items-center gap-6">
+                <div class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                </div>
+                <div class="flex-1">
+                    <p class="text-indigo-600 font-semibold text-sm">ตำบลที่มีผลการเรียนดีที่สุด (เฉลี่ย)</p>
+                    <h3 id="dist-top-score" class="text-2xl font-bold text-slate-800">-</h3>
+                    <p id="dist-top-score-val" class="text-indigo-500 text-sm font-medium">คะแนนเฉลี่ย 0.00</p>
+                </div>
+            </div>
+            <div class="bg-green-50 p-6 rounded-2xl border border-green-100 flex items-center gap-6">
+                <div class="w-14 h-14 bg-green-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div class="flex-1">
+                    <p class="text-green-600 font-semibold text-sm">ตำบลที่สอบผ่านสะสมมากที่สุด</p>
+                    <h3 id="dist-top-pass" class="text-2xl font-bold text-slate-800">-</h3>
+                    <p id="dist-top-pass-val" class="text-green-500 text-sm font-medium">สอบผ่าน 0 รายการ</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="table-container p-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <div class="w-2 h-6 bg-indigo-600 rounded-full"></div>
+                    ผลสัมฤทธิ์รายตำบล
+                </h3>
+                <div class="h-72"><canvas id="chart-avg"></canvas></div>
+            </div>
+            <div class="table-container p-6">
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <div class="w-2 h-6 bg-green-600 rounded-full"></div>
+                    สถิติการสอบผ่านรายตำบล
+                </h3>
+                <div class="h-72"><canvas id="chart-pass"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Duplicate/Repeat Analysis -->
+        <div class="table-container border-orange-200">
+            <div class="px-6 py-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-orange-800 uppercase">วิเคราะห์การสอบซ้ำและลงทะเบียนหลายวิชา</h3>
+                <span class="text-[10px] bg-orange-200 text-orange-800 px-3 py-1 rounded-full font-bold">ตรวจสอบจาก ชื่อ + รหัส + เบอร์โทร</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-4">รายชื่อผู้เข้าสอบ</th>
+                            <th class="px-6 py-4 text-center">จำนวนวิชา/ครั้ง</th>
+                            <th class="px-6 py-4">วิชาที่สอบ</th>
+                            <th class="px-6 py-4">เวลาครั้งล่าสุด</th>
+                            <th class="px-6 py-4 text-center">เฉลี่ยทุกวิชา</th>
+                            <th class="px-6 py-4 text-center">ผลลัพธ์</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-dup" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Comprehensive History -->
+        <div class="table-container">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-800">ประวัติการสอบทั้งหมด</h3>
+                <div id="filter-status" class="text-xs text-slate-400">แสดงข้อมูลล่าสุด 500 รายการ</div>
+            </div>
+            <div class="overflow-x-auto max-h-[500px]">
+                <table class="w-full text-left border-collapse">
+                    <thead class="sticky-header text-slate-500 text-[11px] uppercase tracking-wider">
+                        <tr class="shadow-sm">
+                            <th class="px-6 py-3">เวลา (A)</th>
+                            <th class="px-6 py-3">วิชา</th>
+                            <th class="px-6 py-3">ชื่อ (C)</th>
+                            <th class="px-6 py-3">รหัส (D)</th>
+                            <th class="px-6 py-3">ตำบล (G)</th>
+                            <th class="px-6 py-3 text-center">คะแนน (B)</th>
+                            <th class="px-6 py-3 text-center">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-raw" class="divide-y divide-slate-50 text-xs text-slate-500"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUBJECT_MAP = {
+            'ทร11001': '0',
+            'อข11001': '1088195886',
+            'อช11001': '201928374',
+            'อช11002': '301928374',
+            'อช11003': '401928374',
+            'ทช11001': '501928374',
+            'ทช11003': '601928374',
+            'พท11001': '701928374',
+            'พต11001': '801928374',
+            'พว11001': '901928374',
+            'สค11001': '111928374',
+            'สค11002': '221928374',
+            'สค11003': '331928374',
+            'พว11002': '441928374'
+        };
+
+        const SHEET_ID = '1eGKJeA6ulNuepkQwa87pH-5fF34wgHexmeLK9yLUKPM';
+        let currentSubject = 'ALL';
+        let activeCharts = {};
+
+        function changeSubject(val) {
+            currentSubject = val;
+            fetchData();
+        }
+
+        async function fetchData() {
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            loading.classList.remove('hidden');
+            
+            let allDataRows = [];
+
+            try {
+                if (currentSubject === 'ALL') {
+                    const keys = Object.keys(SUBJECT_MAP);
+                    for (let i = 0; i < keys.length; i++) {
+                        const code = keys[i];
+                        loadingText.innerText = `กำลังดึงข้อมูลวิชา ${code} (${i + 1}/${keys.length})...`;
+                        const rows = await fetchSubjectData(code);
+                        allDataRows = allDataRows.concat(rows);
+                    }
+                } else {
+                    loadingText.innerText = `กำลังโหลดข้อมูลวิชา ${currentSubject}...`;
+                    allDataRows = await fetchSubjectData(currentSubject);
+                }
+                
+                processAnalytics(allDataRows);
+            } catch (err) {
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูล โปรดตรวจสอบความถูกต้องของ GID ในโค้ด");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        async function fetchSubjectData(code) {
+            const gid = SUBJECT_MAP[code];
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+            const response = await fetch(url);
+            const csvText = await response.text();
+            
+            const rows = csvText.split('\n').map(line => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let char of line) {
+                    if (char === '"') inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+                    else current += char;
+                }
+                result.push(current.trim());
+                return result;
+            });
+
+            // Add subject code to each row for "ALL" view
+            return rows.slice(1)
+                .filter(r => r.length >= 7 && r[1] !== "")
+                .map(r => {
+                    r.push(code); // index 7 = subject code
+                    return r;
+                });
+        }
+
+        function processAnalytics(rows) {
+            const userMap = {};
+            const districtStats = {};
+            let totalScore = 0;
+            let totalPassCount = 0;
+
+            rows.forEach(r => {
+                const time = r[0];
+                const score = parseFloat(r[1]) || 0;
+                const name = r[2];
+                const infoD = r[3];
+                const infoE = r[4];
+                const district = r[6] || 'ไม่ระบุ';
+                const subject = r[7];
+                const isPass = score >= 20;
+
+                const userKey = `${name}_${infoD}_${infoE}`.toLowerCase();
+                if (!userMap[userKey]) {
+                    userMap[userKey] = { name, infoD, infoE, district, attempts: [] };
+                }
+                userMap[userKey].attempts.push({ time, score, isPass, subject });
+
+                if (!districtStats[district]) {
+                    districtStats[district] = { totalScore: 0, count: 0, passed: 0 };
+                }
+                districtStats[district].totalScore += score;
+                districtStats[district].count += 1;
+                if (isPass) {
+                    districtStats[district].passed += 1;
+                    totalPassCount++;
+                }
+                totalScore += score;
+            });
+
+            // Update UI
+            document.getElementById('main-title').innerText = currentSubject === 'ALL' ? 'ระบบวิเคราะห์ผลการสอบภาพรวม' : `วิเคราะห์ผลการสอบ: ${currentSubject}`;
+            document.getElementById('kpi-total').innerText = rows.length.toLocaleString();
+            document.getElementById('kpi-pass-rate').innerText = rows.length > 0 ? ((totalPassCount / rows.length) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('kpi-pass-count').innerText = `${totalPassCount.toLocaleString()} รายการ`;
+            document.getElementById('kpi-avg').innerText = rows.length > 0 ? (totalScore / rows.length).toFixed(1) : '0.0';
+            
+            const duplicates = Object.values(userMap).filter(u => u.attempts.length > 1);
+            document.getElementById('kpi-dup-users').innerText = duplicates.length.toLocaleString();
+
+            // District Rank
+            let topScoreDist = "-", maxAvg = 0;
+            let topPassDist = "-", maxPass = 0;
+            const labels = Object.keys(districtStats).sort();
+            const avgData = [];
+            const passData = [];
+
+            labels.forEach(d => {
+                const avg = districtStats[d].totalScore / districtStats[d].count;
+                const pass = districtStats[d].passed;
+                avgData.push(avg.toFixed(2));
+                passData.push(pass);
+                if (avg > maxAvg) { maxAvg = avg; topScoreDist = d; }
+                if (pass > maxPass) { maxPass = pass; topPassDist = d; }
+            });
+
+            document.getElementById('dist-top-score').innerText = topScoreDist;
+            document.getElementById('dist-top-score-val').innerText = `คะแนนเฉลี่ย ${maxAvg.toFixed(2)}`;
+            document.getElementById('dist-top-pass').innerText = topPassDist;
+            document.getElementById('dist-top-pass-val').innerText = `ผ่านสะสม ${maxPass} รายการ`;
+
+            renderCharts(labels, avgData, passData);
+            updateTables(userMap, rows);
+        }
+
+        function renderCharts(labels, avgs, passes) {
+            const chartConfig = (data, color, label) => ({
+                type: 'bar',
+                data: { labels, datasets: [{ label, data, backgroundColor: color, borderRadius: 8 }] },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            if (activeCharts.avg) activeCharts.avg.destroy();
+            activeCharts.avg = new Chart(document.getElementById('chart-avg'), chartConfig(avgs, '#6366f1', 'คะแนนเฉลี่ย'));
+
+            if (activeCharts.pass) activeCharts.pass.destroy();
+            activeCharts.pass = new Chart(document.getElementById('chart-pass'), chartConfig(passes, '#10b981', 'จำนวนที่ผ่าน'));
+        }
+
+        function updateTables(userMap, rows) {
+            const dupBody = document.getElementById('table-dup');
+            dupBody.innerHTML = '';
+            
+            const sortedUsers = Object.values(userMap)
+                .filter(u => u.attempts.length > 1)
+                .sort((a,b) => b.attempts.length - a.attempts.length);
+
+            sortedUsers.forEach(u => {
+                const last = u.attempts.sort((a,b) => b.time.localeCompare(a.time))[0];
+                const subjects = [...new Set(u.attempts.map(a => a.subject))].join(', ');
+                const avgScore = (u.attempts.reduce((sum, a) => sum + a.score, 0) / u.attempts.length).toFixed(1);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-800">${u.name}</div>
+                        <div class="text-[10px] text-slate-400 font-medium">${u.infoD} • ${u.district}</div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">${u.attempts.length}</span>
+                    </td>
+                    <td class="px-6 py-4 text-[10px] max-w-[150px] truncate">${subjects}</td>
+                    <td class="px-6 py-4 text-[10px] text-slate-500">${last.time}</td>
+                    <td class="px-6 py-4 text-center font-bold text-indigo-600">${avgScore}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${avgScore >= 20 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                            ${avgScore >= 20 ? 'ยอดเยี่ยม' : 'ปรับปรุง'}
+                        </span>
+                    </td>
+                `;
+                dupBody.appendChild(tr);
+            });
+
+            const rawBody = document.getElementById('table-raw');
+            rawBody.innerHTML = '';
+            rows.sort((a,b) => b[0].localeCompare(a[0])).slice(0, 500).forEach(r => {
+                const score = parseFloat(r[1]);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-3">${r[0]}</td>
+                    <td class="px-6 py-3 font-bold text-indigo-500">${r[7]}</td>
+                    <td class="px-6 py-3 font-medium text-slate-700">${r[2]}</td>
+                    <td class="px-6 py-3 text-slate-400">${r[3]}</td>
+                    <td class="px-6 py-3">${r[6]}</td>
+                    <td class="px-6 py-3 text-center font-bold text-slate-700 bg-slate-50/50">${r[1]}</td>
+                    <td class="px-6 py-3 text-center">
+                        <div class="w-2 h-2 rounded-full mx-auto ${score >= 20 ? 'bg-green-500' : 'bg-red-500'}"></div>
+                    </td>
+                `;
+                rawBody.appendChild(tr);
+            });
+        }
+
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
