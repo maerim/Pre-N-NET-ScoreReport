@@ -3,79 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรายงานผลการสอบแบบละเอียด</title>
+    <title>ระบบรายงานผลการสอบ N-NET</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
-        .glass-panel { @apply bg-white rounded-xl shadow-sm border border-slate-200; }
-        .stat-value { @apply text-3xl font-bold text-slate-800; }
-        .stat-label { @apply text-sm text-slate-500 font-medium; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; color: #1e293b; }
         
-        /* Custom Scrollbar for tables */
+        /* Modern Card Style */
+        .glass-panel { 
+            @apply bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-300; 
+        }
+        .glass-panel:hover {
+            @apply shadow-md border-slate-300;
+        }
+
+        .stat-value { @apply text-3xl font-bold text-slate-800 tracking-tight; }
+        .stat-label { @apply text-sm text-slate-500 font-medium uppercase tracking-wide; }
+        
+        /* Gradient Text */
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         .loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
         }
     </style>
 </head>
-<body class="p-4 md:p-6 lg:p-8 min-h-screen">
+<body class="p-4 md:p-6 min-h-screen">
 
     <!-- Loading Screen -->
     <div id="loading" class="loading-overlay hidden">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
-        <h2 class="text-xl font-bold text-slate-700">กำลังประมวลผลข้อมูล...</h2>
-        <p id="loading-text" class="text-slate-500 mt-2">กรุณารอสักครู่ ระบบกำลังดึงข้อมูลจาก Google Sheets</p>
+        <div class="relative">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+            <div class="absolute top-0 left-0 h-16 w-16 flex items-center justify-center">
+                <i class="ri-loader-4-line text-blue-600 text-2xl"></i>
+            </div>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800">กำลังประมวลผลข้อมูล...</h2>
+        <p id="loading-text" class="text-slate-500 mt-2">กรุณารอสักครู่ ระบบกำลังดึงข้อมูลจาก Cloud</p>
     </div>
 
-    <div class="max-w-7xl mx-auto space-y-6">
+    <div class="max-w-7xl mx-auto space-y-6 pb-12">
         
         <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 text-blue-900">
-                    📊 ระบบวิเคราะห์ผลการสอบรายวิชา
-                </h1>
-                <p class="text-slate-500 mt-1 text-sm">
-                    เกณฑ์ผ่าน: 20/40 คะแนน | ข้อมูลอัปเดต Real-time
-                </p>
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="ri-bar-chart-box-fill text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">
+                        ระบบรายงานผลการสอบ N-NET
+                    </h1>
+                    <p class="text-slate-500 text-sm flex items-center gap-2">
+                        <i class="ri-checkbox-circle-line text-green-500"></i>
+                        เกณฑ์ผ่าน: 20/40 คะแนน | ข้อมูลอัปเดต Real-time
+                    </p>
+                </div>
             </div>
             
-            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                <select id="subject-selector" onchange="changeSubject(this.value)" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                    <option value="ALL">🌟 ดูภาพรวมทุกวิชา</option>
-                    <optgroup label="ระดับประถมศึกษา">
-                        <option value="ทร11001">ทร11001 ทักษะการเรียนรู้</option>
-                        <option value="อข11001">อข11001 ภาษาไทย</option>
-                        <option value="อช11001">อช11001 ช่องทางการเข้าสู่อาชีพ</option>
-                        <option value="อช11002">อช11002 ทักษะการประกอบอาชีพ</option>
-                        <option value="อช11003">อช11003 พัฒนาอาชีพให้มีอยู่มีกิน</option>
-                        <option value="ทช11001">ทช11001 สุขศึกษา พลศึกษา</option>
-                        <option value="ทช11003">ทช11003 ศิลปศึกษา</option>
-                        <option value="พท11001">พท11001 ภาษาอังกฤษพื้นฐาน</option>
-                        <option value="พต11001">พต11001 ภาษาอังกฤษในชีวิตประจำวัน</option>
-                        <option value="พว11001">พว11001 วิทยาศาสตร์</option>
-                        <option value="พว11002">พว11002 คณิตศาสตร์</option>
-                        <option value="สค11001">สค11001 สังคมศึกษา</option>
-                        <option value="สค11002">สค11002 ศาสนาและหน้าที่พลเมือง</option>
-                        <option value="สค11003">สค11003 การพัฒนาตนเอง</option>
-                    </optgroup>
-                </select>
-                <button onclick="fetchData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto bg-slate-50 p-2 rounded-xl border border-slate-100">
+                <div class="relative w-full md:w-64">
+                    <i class="ri-book-read-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <select id="subject-selector" onchange="changeSubject(this.value)" class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full outline-none transition-all cursor-pointer shadow-sm">
+                        <option value="ALL">🌟 ดูภาพรวมทุกวิชา</option>
+                        <optgroup label="ระดับประถมศึกษา">
+                            <option value="ทร11001">ทร11001 ทักษะการเรียนรู้</option>
+                            <option value="อข11001">อข11001 ภาษาไทย</option>
+                            <option value="อช11001">อช11001 ช่องทางการเข้าสู่อาชีพ</option>
+                            <option value="อช11002">อช11002 ทักษะการประกอบอาชีพ</option>
+                            <option value="อช11003">อช11003 พัฒนาอาชีพให้มีอยู่มีกิน</option>
+                            <option value="ทช11001">ทช11001 สุขศึกษา พลศึกษา</option>
+                            <option value="ทช11003">ทช11003 ศิลปศึกษา</option>
+                            <option value="พท11001">พท11001 ภาษาอังกฤษพื้นฐาน</option>
+                            <option value="พต11001">พต11001 ภาษาอังกฤษในชีวิตประจำวัน</option>
+                            <option value="พว11001">พว11001 วิทยาศาสตร์</option>
+                            <option value="พว11002">พว11002 คณิตศาสตร์</option>
+                            <option value="สค11001">สค11001 สังคมศึกษา</option>
+                            <option value="สค11002">สค11002 ศาสนาและหน้าที่พลเมือง</option>
+                            <option value="สค11003">สค11003 การพัฒนาตนเอง</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <button onclick="fetchData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm px-6 py-2.5 text-center flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-200 active:scale-95">
+                    <i class="ri-refresh-line"></i>
                     รีเฟรช
                 </button>
             </div>
@@ -83,115 +115,168 @@
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="glass-panel p-6 border-l-4 border-l-blue-500">
-                <div class="stat-label">ผู้เข้าสอบทั้งหมด</div>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span id="kpi-total" class="stat-value">0</span>
-                    <span class="text-sm text-slate-400">ครั้ง</span>
+            <div class="glass-panel p-6 border-b-4 border-blue-500 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-110 transition-transform"></div>
+                <div class="relative z-10">
+                    <div class="stat-label mb-1">ผู้เข้าสอบทั้งหมด</div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpi-total" class="stat-value">0</span>
+                        <span class="text-sm text-slate-400 font-medium">ครั้ง</span>
+                    </div>
                 </div>
+                <i class="ri-group-line absolute right-4 bottom-4 text-3xl text-blue-100"></i>
             </div>
             
-            <div class="glass-panel p-6 border-l-4 border-l-green-500">
-                <div class="stat-label">ผ่านเกณฑ์ (>=20)</div>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span id="kpi-pass-count" class="stat-value text-green-600">0</span>
-                    <span id="kpi-pass-rate" class="text-sm font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">0%</span>
+            <div class="glass-panel p-6 border-b-4 border-emerald-500 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
+                <div class="relative z-10">
+                    <div class="stat-label mb-1">ผ่านเกณฑ์ (>=20)</div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpi-pass-count" class="stat-value text-emerald-600">0</span>
+                        <span id="kpi-pass-rate" class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">0%</span>
+                    </div>
                 </div>
+                <i class="ri-check-double-line absolute right-4 bottom-4 text-3xl text-emerald-100"></i>
             </div>
 
-            <div class="glass-panel p-6 border-l-4 border-l-orange-500">
-                <div class="stat-label">ทำซ้ำ / หลายวิชา</div>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span id="kpi-dup" class="stat-value text-orange-600">0</span>
-                    <span class="text-sm text-slate-400">คน</span>
+            <div class="glass-panel p-6 border-b-4 border-orange-500 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-orange-50 rounded-full group-hover:scale-110 transition-transform"></div>
+                <div class="relative z-10">
+                    <div class="stat-label mb-1">ทำซ้ำ / หลายวิชา</div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpi-dup" class="stat-value text-orange-600">0</span>
+                        <span class="text-sm text-slate-400 font-medium">คน</span>
+                    </div>
                 </div>
+                <i class="ri-history-line absolute right-4 bottom-4 text-3xl text-orange-100"></i>
             </div>
 
-            <div class="glass-panel p-6 border-l-4 border-l-purple-500">
-                <div class="stat-label">คะแนนเฉลี่ยรวม</div>
-                <div class="mt-2 flex items-baseline gap-2">
-                    <span id="kpi-avg" class="stat-value text-purple-600">0.00</span>
-                    <span class="text-sm text-slate-400">/ 40</span>
+            <div class="glass-panel p-6 border-b-4 border-purple-500 relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-purple-50 rounded-full group-hover:scale-110 transition-transform"></div>
+                <div class="relative z-10">
+                    <div class="stat-label mb-1">คะแนนเฉลี่ยรวม</div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpi-avg" class="stat-value text-purple-600">0.00</span>
+                        <span class="text-sm text-slate-400 font-medium">/ 40</span>
+                    </div>
                 </div>
+                <i class="ri-bar-chart-grouped-line absolute right-4 bottom-4 text-3xl text-purple-100"></i>
             </div>
         </div>
 
-        <!-- District Analysis Highlight -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-purple-100 text-sm font-medium mb-1">🏆 ตำบลที่คะแนนเฉลี่ยสูงสุด</p>
-                        <h3 id="best-score-dist" class="text-2xl font-bold">กำลังประมวลผล...</h3>
-                    </div>
-                    <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center gap-2">
-                    <span id="best-score-val" class="text-3xl font-bold">0.00</span>
-                    <span class="text-purple-200 text-sm">คะแนน</span>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-emerald-100 text-sm font-medium mb-1">🥇 ตำบลที่สอบผ่านมากที่สุด</p>
-                        <h3 id="best-pass-dist" class="text-2xl font-bold">กำลังประมวลผล...</h3>
-                    </div>
-                    <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center gap-2">
-                    <span id="best-pass-val" class="text-3xl font-bold">0</span>
-                    <span class="text-emerald-100 text-sm">คน (ผ่านเกณฑ์ 20 คะแนน)</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts -->
+        <!-- Charts Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="glass-panel p-6">
-                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                    <span class="w-1 h-6 bg-purple-500 rounded-full block"></span>
-                    คะแนนเฉลี่ยรายตำบล
-                </h3>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <span class="w-1.5 h-6 bg-purple-500 rounded-full block"></span>
+                        คะแนนเฉลี่ยรายตำบล
+                    </h3>
+                    <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">Score Average</span>
+                </div>
                 <div class="h-[300px]">
                     <canvas id="chart-score"></canvas>
                 </div>
             </div>
             <div class="glass-panel p-6">
-                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                    <span class="w-1 h-6 bg-emerald-500 rounded-full block"></span>
-                    จำนวนผู้สอบผ่านรายตำบล
-                </h3>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <span class="w-1.5 h-6 bg-emerald-500 rounded-full block"></span>
+                        จำนวนผู้สอบผ่านรายตำบล
+                    </h3>
+                    <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">Passed Count</span>
+                </div>
                 <div class="h-[300px]">
                     <canvas id="chart-pass"></canvas>
                 </div>
             </div>
         </div>
 
+        <!-- District Highlights & Recent Feed -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- District Highlights -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8 blur-2xl"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-indigo-200 text-xs uppercase font-bold tracking-wider mb-1">Top Performer</p>
+                                <h3 class="text-lg font-bold">ตำบลคะแนนเฉลี่ยสูงสุด</h3>
+                            </div>
+                            <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                                <i class="ri-trophy-line text-xl"></i>
+                            </div>
+                        </div>
+                        <h2 id="best-score-dist" class="text-3xl font-bold mb-1">รอผล...</h2>
+                        <div class="flex items-center gap-2 text-indigo-100">
+                            <span id="best-score-val" class="font-bold text-xl text-white">0.00</span>
+                            <span class="text-sm opacity-80">คะแนนเฉลี่ย</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8 blur-2xl"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-teal-100 text-xs uppercase font-bold tracking-wider mb-1">Most Passed</p>
+                                <h3 class="text-lg font-bold">ตำบลสอบผ่านมากที่สุด</h3>
+                            </div>
+                            <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                                <i class="ri-user-star-line text-xl"></i>
+                            </div>
+                        </div>
+                        <h2 id="best-pass-dist" class="text-3xl font-bold mb-1">รอผล...</h2>
+                        <div class="flex items-center gap-2 text-teal-100">
+                            <span id="best-pass-val" class="font-bold text-xl text-white">0</span>
+                            <span class="text-sm opacity-80">คน (ผ่านเกณฑ์)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Exam Feed (Updated) -->
+            <div class="lg:col-span-2 glass-panel p-0 overflow-hidden flex flex-col h-full max-h-[500px]">
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <i class="ri-time-line text-blue-500"></i>
+                        ประวัติการสอบล่าสุด
+                    </h3>
+                    <span class="text-xs font-mono text-slate-400">Latest Activity</span>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-2" id="recent-feed">
+                    <!-- Feed items injected here -->
+                    <div class="flex flex-col items-center justify-center h-40 text-slate-400">
+                        <i class="ri-loader-2-line animate-spin text-2xl mb-2"></i>
+                        <span>กำลังโหลดข้อมูล...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Duplicate Analysis Table -->
         <div class="glass-panel overflow-hidden">
-            <div class="p-6 border-b border-slate-100 bg-orange-50/50 flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <div class="p-6 border-b border-slate-100 bg-orange-50/30 flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <i class="ri-file-history-line text-orange-500"></i>
                         ตรวจสอบการสอบซ้ำ (Tracking)
                     </h3>
-                    <p class="text-sm text-slate-500">แสดงรายชื่อผู้ที่สอบมากกว่า 1 ครั้ง หรือลงทะเบียนหลายวิชา</p>
+                    <p class="text-sm text-slate-500 mt-1">รายชื่อผู้ที่มีประวัติการสอบมากกว่า 1 ครั้ง หรือลงทะเบียนเรียนหลายวิชา</p>
                 </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                    <thead class="bg-slate-50/80 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200">
                         <tr>
-                            <th class="px-6 py-4">ผู้เข้าสอบ</th>
+                            <th class="px-6 py-4">ข้อมูลผู้เข้าสอบ</th>
+                            <th class="px-6 py-4">รหัสนักศึกษา</th>
                             <th class="px-6 py-4 text-center">จำนวนครั้ง</th>
                             <th class="px-6 py-4">Timeline การสอบ (เวลา : วิชา : คะแนน)</th>
-                            <th class="px-6 py-4 text-center">สรุปผลล่าสุด</th>
+                            <th class="px-6 py-4 text-center">ผลลัพธ์ล่าสุด</th>
                         </tr>
                     </thead>
                     <tbody id="table-dup" class="divide-y divide-slate-100 text-sm">
@@ -203,21 +288,27 @@
 
         <!-- Main Data Table -->
         <div class="glass-panel overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-800">📋 รายละเอียดผลการสอบทั้งหมด</h3>
-                <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">แสดง 500 รายการล่าสุด</span>
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
+                <div class="flex items-center gap-2">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                        <i class="ri-table-line"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">รายละเอียดผลการสอบทั้งหมด</h3>
+                        <p class="text-xs text-slate-400">Showing latest 500 records</p>
+                    </div>
+                </div>
             </div>
             <div class="overflow-x-auto max-h-[600px]">
                 <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold sticky top-0 z-10 shadow-sm">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold sticky top-0 z-10 shadow-sm border-b border-slate-200">
                         <tr>
-                            <th class="px-4 py-3 bg-slate-50">เวลา (A)</th>
+                            <th class="px-4 py-3 bg-slate-50">เวลาสอบ</th>
                             <th class="px-4 py-3 bg-slate-50">วิชา</th>
-                            <th class="px-4 py-3 bg-slate-50">ชื่อ-สกุล (C)</th>
-                            <th class="px-4 py-3 bg-slate-50">รหัส (D)</th>
-                            <th class="px-4 py-3 bg-slate-50">ข้อมูลอื่น (E)</th>
-                            <th class="px-4 py-3 bg-slate-50">ตำบล (G)</th>
-                            <th class="px-4 py-3 bg-slate-50 text-center">คะแนน (B)</th>
+                            <th class="px-4 py-3 bg-slate-50">ผู้เข้าสอบ (C+D+E)</th>
+                            <th class="px-4 py-3 bg-slate-50">รหัสนักศึกษา (F)</th>
+                            <th class="px-4 py-3 bg-slate-50">ศกร.ตำบล (G)</th>
+                            <th class="px-4 py-3 bg-slate-50 text-center">คะแนน</th>
                             <th class="px-4 py-3 bg-slate-50 text-center">ผลลัพธ์</th>
                         </tr>
                     </thead>
@@ -232,12 +323,11 @@
 
     <script>
         // 1. Config & Mapping
-        // Map Subject Code to GID based on user requirements
         const SHEET_ID = '1eGKJeA6ulNuepkQwa87pH-5fF34wgHexmeLK9yLUKPM';
         const SUBJECTS = {
             'ทร11001': '0',
             'อข11001': '2066510488',
-            'อช11001': '1450644460', // Assumed from sequence (User listed 2nd "อช11003")
+            'อช11001': '1450644460',
             'อช11002': '1588515162',
             'อช11003': '1673395563',
             'ทช11001': '209296717',
@@ -245,7 +335,7 @@
             'พท11001': '1032706829',
             'พต11001': '2101233771',
             'พว11001': '662271838',
-            'พว11002': '71080071',  // Assumed from duplicate label "พว11001"
+            'พว11002': '71080071',
             'สค11001': '787887513',
             'สค11002': '1177052133',
             'สค11003': '725579707'
@@ -294,7 +384,7 @@
             const res = await fetch(url);
             const text = await res.text();
             
-            // CSV Parser handling quotes
+            // CSV Parser
             const rows = [];
             let row = [];
             let cur = "";
@@ -314,18 +404,16 @@
             if(cur) row.push(cur.trim());
             if(row.length > 0) rows.push(row);
 
-            // Filter header and add subject code
-            // Data Structure: 0=Time, 1=Score, 2=Name, 3=Code, 4=Info, 5=StudentID(Hide), 6=District
+            // Filter & Map
             return rows.slice(1)
                 .filter(r => r.length >= 2 && r[0] !== "") 
                 .map(r => {
-                    r.push(subjectCode); // Add Subject at index 7
+                    r.push(subjectCode); 
                     return r;
                 });
         }
 
         function processData(rows) {
-            // Analytics Variables
             let totalScore = 0;
             let passCount = 0;
             const districtStats = {};
@@ -337,16 +425,15 @@
                 const name = row[2];
                 const codeID = row[3];
                 const otherInfo = row[4];
-                // index 5 is StudentID (Hidden)
-                const district = row[6] ? row[6].trim() : "ไม่ระบุ";
+                const studentID = row[5] ? row[5].trim() : "-"; // Col F
+                const district = row[6] ? row[6].trim() : "ไม่ระบุ"; // Col G
                 const subject = row[7];
                 const isPass = score >= 20;
 
-                // 1. Overview Stats
+                // Stats
                 totalScore += score;
                 if(isPass) passCount++;
 
-                // 2. District Stats
                 if(!districtStats[district]) {
                     districtStats[district] = { total: 0, count: 0, passed: 0 };
                 }
@@ -354,12 +441,14 @@
                 districtStats[district].count += 1;
                 if(isPass) districtStats[district].passed += 1;
 
-                // 3. User Tracking (Duplicate Check)
-                // Key = Name + CodeID (to identify unique person)
-                const key = `${name}_${codeID}`.toLowerCase().replace(/\s/g, '');
+                // User Tracking Key
+                let key = studentID !== "-" && studentID.length > 5 
+                    ? studentID 
+                    : `${name}_${codeID}`.toLowerCase().replace(/\s/g, '');
+
                 if(!userMap[key]) {
                     userMap[key] = { 
-                        name, codeID, otherInfo, district, 
+                        name, codeID, otherInfo, studentID, district, 
                         attempts: [] 
                     };
                 }
@@ -368,9 +457,7 @@
                 });
             });
 
-            // --- Update UI ---
-
-            // KPIs
+            // UI Updates
             const totalCount = rows.length;
             document.getElementById('kpi-total').innerText = totalCount.toLocaleString();
             document.getElementById('kpi-pass-count').innerText = passCount.toLocaleString();
@@ -403,37 +490,93 @@
             document.getElementById('best-pass-dist').innerText = bestPassDist;
             document.getElementById('best-pass-val').innerText = maxPass >= 0 ? maxPass : '0';
 
-            // Render Charts & Tables
+            // Renders
             renderCharts(distLabels, avgData, passData);
+            renderRecentFeed(rows);
             renderMainTable(rows);
             renderDuplicateTable(userMap);
+        }
+
+        function renderRecentFeed(rows) {
+            const feedContainer = document.getElementById('recent-feed');
+            feedContainer.innerHTML = '';
+
+            const recent = [...rows].sort((a,b) => b[0].localeCompare(a[0])).slice(0, 50); // Show 50
+
+            recent.forEach(r => {
+                const score = parseFloat(r[1]);
+                const isPass = score >= 20;
+                // r[0]=Time(A), r[2]=Name(C), r[3]=Code(D), r[4]=Info(E), r[5]=StudentID(F), r[6]=District(G), r[7]=Subject
+                
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 bg-white hover:bg-slate-50 rounded-xl border border-slate-100 transition-colors group";
+                
+                // Requirement: C, D, E together
+                const userInfo = `
+                    <span class="font-bold text-slate-700">${r[2]}</span>
+                    <span class="text-slate-300 mx-1">|</span>
+                    <span class="text-slate-500">${r[3]}</span>
+                    <span class="text-slate-300 mx-1">|</span>
+                    <span class="text-slate-500">${r[4]}</span>
+                `;
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 w-full overflow-hidden">
+                        <div class="w-10 h-10 rounded-full ${isPass ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'} flex-shrink-0 flex items-center justify-center font-bold text-lg shadow-sm">
+                           ${isPass ? '<i class="ri-check-line"></i>' : '<i class="ri-close-line"></i>'}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-sm truncate leading-tight mb-1">
+                                ${userInfo}
+                            </div>
+                            <div class="text-xs text-slate-500 flex flex-wrap items-center gap-y-1 gap-x-2">
+                                <span class="text-blue-600 font-mono font-medium bg-blue-50 px-1 rounded">รหัส: ${r[5]}</span>
+                                <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-medium">${r[7]}</span>
+                                <span class="text-slate-400">• ${r[6]}</span>
+                            </div>
+                            <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                                <i class="ri-calendar-line"></i> ${r[0]}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right pl-3">
+                        <div class="font-bold text-xl ${isPass ? 'text-emerald-600' : 'text-red-500'} leading-none">${score}</div>
+                        <div class="text-[10px] text-slate-400 mt-1">คะแนน</div>
+                    </div>
+                `;
+                feedContainer.appendChild(item);
+            });
         }
 
         function renderMainTable(rows) {
             const tbody = document.getElementById('table-main');
             tbody.innerHTML = '';
             
-            // Sort by timestamp descending
             const sorted = [...rows].sort((a,b) => b[0].localeCompare(a[0])).slice(0, 500);
 
             sorted.forEach(r => {
                 const score = parseFloat(r[1]);
                 const isPass = score >= 20;
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-blue-50 transition-colors border-b border-slate-100";
+                tr.className = "hover:bg-blue-50/50 transition-colors border-b border-slate-100 group";
                 
-                // Columns: Time(0), Subject(7), Name(2), Code(3), Info(4), District(6), Score(1)
-                // Note: Skip index 5 (Student ID)
+                const nameCombined = `
+                    <div class="text-slate-700 text-sm py-1">
+                        <span class="font-medium">${r[2]}</span>  
+                        <span class="text-slate-300 mx-1">|</span> ${r[3]} 
+                        <span class="text-slate-300 mx-1">|</span> ${r[4]}
+                    </div>
+                `;
+
                 tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap text-xs text-slate-500">${r[0]}</td>
-                    <td class="px-4 py-3"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded">${r[7]}</span></td>
-                    <td class="px-4 py-3 font-medium text-slate-700">${r[2]}</td>
-                    <td class="px-4 py-3 text-slate-500">${r[3]}</td>
-                    <td class="px-4 py-3 text-slate-500 text-xs">${r[4]}</td>
-                    <td class="px-4 py-3 text-slate-700">${r[6]}</td>
-                    <td class="px-4 py-3 text-center font-bold text-lg ${isPass ? 'text-green-600' : 'text-red-500'}">${score}</td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="px-2 py-1 rounded text-xs font-bold ${isPass ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                    <td class="px-4 py-3 whitespace-nowrap text-xs text-slate-500 align-top font-mono">${r[0]}</td>
+                    <td class="px-4 py-3 align-top"><span class="bg-white border border-slate-200 text-slate-600 text-xs font-bold px-2 py-1 rounded-md shadow-sm">${r[7]}</span></td>
+                    <td class="px-4 py-3 align-top">${nameCombined}</td>
+                    <td class="px-4 py-3 align-top text-blue-600 font-mono text-sm font-medium bg-blue-50/50 rounded px-2 w-fit">${r[5]}</td>
+                    <td class="px-4 py-3 align-top text-slate-600">${r[6]}</td>
+                    <td class="px-4 py-3 align-top text-center font-bold text-lg ${isPass ? 'text-emerald-600' : 'text-red-500'}">${score}</td>
+                    <td class="px-4 py-3 align-top text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${isPass ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}">
                             ${isPass ? 'ผ่าน' : 'ไม่ผ่าน'}
                         </span>
                     </td>
@@ -446,54 +589,52 @@
             const tbody = document.getElementById('table-dup');
             tbody.innerHTML = '';
             
-            // Only users with > 1 attempt
             const dupUsers = Object.values(userMap)
                 .filter(u => u.attempts.length > 1)
-                .sort((a,b) => b.attempts.length - a.attempts.length); // Sort by attempt count
+                .sort((a,b) => b.attempts.length - a.attempts.length);
 
             dupUsers.forEach(u => {
-                // Sort attempts by time
                 u.attempts.sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                
                 const lastAttempt = u.attempts[u.attempts.length - 1];
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-orange-50 transition-colors border-b border-orange-100 bg-white";
+                tr.className = "hover:bg-orange-50/50 transition-colors border-b border-orange-100 bg-white group";
 
-                // Create Timeline HTML
-                let timelineHTML = `<div class="flex flex-col gap-1 text-xs">`;
+                const userInfo = `
+                    <div class="font-medium text-slate-800">${u.name}</div>
+                    <div class="text-xs text-slate-500 mt-1">${u.codeID} | ${u.otherInfo}</div>
+                    <div class="text-xs text-slate-400 mt-0.5">${u.district}</div>
+                `;
+
+                let timelineHTML = `<div class="flex flex-col gap-2 text-xs py-1">`;
                 u.attempts.forEach((att, idx) => {
-                    const passBadge = att.isPass 
-                        ? `<span class="text-green-600 font-bold">✔ ผ่าน (${att.score})</span>` 
-                        : `<span class="text-red-500">✘ ตก (${att.score})</span>`;
+                    const passClass = att.isPass ? 'text-emerald-600' : 'text-red-500';
+                    const icon = att.isPass ? 'ri-check-line' : 'ri-close-line';
                     
                     timelineHTML += `
-                        <div class="flex items-center gap-2">
-                            <span class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-600">${idx+1}</span>
-                            <span class="text-slate-400 font-mono">${att.timestamp}</span>
-                            <span class="font-bold text-slate-700">[${att.subject}]</span>
-                            ${passBadge}
+                        <div class="flex items-center gap-3 relative pl-4 border-l-2 ${idx === u.attempts.length-1 ? 'border-orange-300' : 'border-slate-200'}">
+                            <div class="absolute -left-[5px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ${idx === u.attempts.length-1 ? 'bg-orange-400' : 'bg-slate-300'}"></div>
+                            <span class="text-slate-400 font-mono text-[10px] w-24">${att.timestamp}</span>
+                            <span class="font-bold text-slate-700 bg-slate-100 px-1.5 rounded">${att.subject}</span>
+                            <span class="${passClass} font-bold flex items-center gap-1">
+                                <i class="${icon}"></i> ${att.score}
+                            </span>
                         </div>
                     `;
                 });
                 timelineHTML += `</div>`;
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 align-top">
-                        <div class="font-bold text-slate-800">${u.name}</div>
-                        <div class="text-xs text-slate-500 mt-1">รหัส: ${u.codeID}</div>
-                        <div class="text-xs text-slate-400">${u.district}</div>
-                    </td>
+                    <td class="px-6 py-4 align-top text-sm">${userInfo}</td>
+                    <td class="px-6 py-4 align-top text-blue-600 font-mono text-sm font-medium">${u.studentID}</td>
                     <td class="px-6 py-4 text-center align-top">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold border border-orange-200 shadow-sm">
                             ${u.attempts.length}
                         </span>
                     </td>
-                    <td class="px-6 py-4 align-top">
-                        ${timelineHTML}
-                    </td>
-                    <td class="px-6 py-4 text-center align-top">
-                         <span class="px-3 py-1 rounded-full text-xs font-bold ${lastAttempt.isPass ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">
-                            ล่าสุด: ${lastAttempt.isPass ? 'ผ่าน' : 'ไม่ผ่าน'}
+                    <td class="px-6 py-4 align-top">${timelineHTML}</td>
+                    <td class="px-6 py-4 text-center align-top pt-6">
+                         <span class="px-3 py-1.5 rounded-lg text-xs font-bold border ${lastAttempt.isPass ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'}">
+                            ${lastAttempt.isPass ? 'ผ่านแล้ว' : 'ยังไม่ผ่าน'}
                         </span>
                     </td>
                 `;
@@ -513,10 +654,15 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: { 
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false } },
+                    x: { grid: { display: false }, border: { display: false } }
                 }
             };
+
+            // Gradient for Score Chart
+            let gradientScore = ctxScore.createLinearGradient(0, 0, 0, 400);
+            gradientScore.addColorStop(0, 'rgba(139, 92, 246, 0.8)');
+            gradientScore.addColorStop(1, 'rgba(139, 92, 246, 0.1)');
 
             charts.score = new Chart(ctxScore, {
                 type: 'bar',
@@ -525,12 +671,18 @@
                     datasets: [{
                         label: 'คะแนนเฉลี่ย',
                         data: avgs,
-                        backgroundColor: '#8b5cf6',
-                        borderRadius: 6,
+                        backgroundColor: gradientScore,
+                        borderRadius: 8,
+                        barThickness: 20,
                     }]
                 },
                 options: commonOptions
             });
+
+            // Gradient for Pass Chart
+            let gradientPass = ctxPass.createLinearGradient(0, 0, 0, 400);
+            gradientPass.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
+            gradientPass.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
 
             charts.pass = new Chart(ctxPass, {
                 type: 'bar',
@@ -539,8 +691,9 @@
                     datasets: [{
                         label: 'จำนวนคนสอบผ่าน',
                         data: passes,
-                        backgroundColor: '#10b981',
-                        borderRadius: 6,
+                        backgroundColor: gradientPass,
+                        borderRadius: 8,
+                        barThickness: 20,
                     }]
                 },
                 options: commonOptions
