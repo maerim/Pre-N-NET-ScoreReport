@@ -88,21 +88,29 @@
                     <i class="ri-book-read-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                     <select id="subject-selector" onchange="changeSubject(this.value)" class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full outline-none transition-all cursor-pointer shadow-sm">
                         <option value="ALL">🌟 ดูภาพรวมทุกวิชา</option>
-                        <optgroup label="ระดับประถมศึกษา">
+                        <optgroup label="สาระทักษะการเรียนรู้">
                             <option value="ทร11001">ทร11001 ทักษะการเรียนรู้</option>
-                            <option value="อข11001">อข11001 ภาษาไทย</option>
+                        </optgroup>
+                        <optgroup label="สาระการประกอบอาชีพ">
                             <option value="อช11001">อช11001 ช่องทางการเข้าสู่อาชีพ</option>
                             <option value="อช11002">อช11002 ทักษะการประกอบอาชีพ</option>
                             <option value="อช11003">อช11003 พัฒนาอาชีพให้มีอยู่มีกิน</option>
-                            <option value="ทช11001">ทช11001 สุขศึกษา พลศึกษา</option>
+                        </optgroup>
+                        <optgroup label="สาระทักษะการดำเนินชีวิต">
+                            <option value="ทช11001">ทช11001 เศรษฐกิจพอเพียง</option>
+                            <option value="ทช11002">ทช11002 สุขศึกษา พลศึกษา</option>
                             <option value="ทช11003">ทช11003 ศิลปศึกษา</option>
-                            <option value="พท11001">พท11001 ภาษาอังกฤษพื้นฐาน</option>
-                            <option value="พต11001">พต11001 ภาษาอังกฤษในชีวิตประจำวัน</option>
+                        </optgroup>
+                        <optgroup label="สาระความรู้พื้นฐาน">
+                            <option value="พท11001">พท11001 ภาษาไทย</option>
+                            <option value="พต11001">พต11001 ภาษาอังกฤษพื้นฐาน</option>
+                            <option value="พค11001">พค11001 คณิตศาสตร์</option>
                             <option value="พว11001">พว11001 วิทยาศาสตร์</option>
-                            <option value="พว11002">พว11002 คณิตศาสตร์</option>
+                        </optgroup>
+                        <optgroup label="สาระการพัฒนาสังคม">
                             <option value="สค11001">สค11001 สังคมศึกษา</option>
                             <option value="สค11002">สค11002 ศาสนาและหน้าที่พลเมือง</option>
-                            <option value="สค11003">สค11003 การพัฒนาตนเอง</option>
+                            <option value="สค11003">สค11003 การพัฒนาตนเอง ชุมชน สังคม</option>
                         </optgroup>
                     </select>
                 </div>
@@ -324,21 +332,23 @@
     <script>
         // 1. Config & Mapping
         const SHEET_ID = '1eGKJeA6ulNuepkQwa87pH-5fF34wgHexmeLK9yLUKPM';
+        
+        // Updated Subject List & GIDs
         const SUBJECTS = {
-            'ทร11001': '0',
-            'อข11001': '2066510488',
-            'อช11001': '1450644460',
-            'อช11002': '1588515162',
-            'อช11003': '1673395563',
-            'ทช11001': '209296717',
-            'ทช11003': '962645656',
-            'พท11001': '1032706829',
-            'พต11001': '2101233771',
-            'พว11001': '662271838',
-            'พว11002': '71080071',
-            'สค11001': '787887513',
-            'สค11002': '1177052133',
-            'สค11003': '725579707'
+            'ทร11001': '0',           // ทักษะการเรียนรู้
+            'อช11001': '2066510488',  // ช่องทางการเข้าสู่อาชีพ
+            'อช11002': '1588515162',  // ทักษะการประกอบอาชีพ
+            'อช11003': '1673395563',  // พัฒนาอาชีพให้มีอยู่มีกิน
+            'ทช11001': '209296717',   // เศรษฐกิจพอเพียง
+            'ทช11002': '1450644460',  // สุขศึกษา พลศึกษา
+            'ทช11003': '962645656',   // ศิลปศึกษา
+            'พท11001': '1032706829',  // ภาษาไทย
+            'พต11001': '2101233771',  // ภาษาอังกฤษพื้นฐาน
+            'พค11001': '662271838',   // คณิตศาสตร์
+            'พว11001': '71080071',    // วิทยาศาสตร์
+            'สค11001': '787887513',   // สังคมศึกษา
+            'สค11002': '1177052133',  // ศาสนาและหน้าที่พลเมือง
+            'สค11003': '725579707'    // การพัฒนาตนเอง ชุมชน สังคม
         };
 
         let currentSubject = 'ALL';
